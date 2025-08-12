@@ -1,1 +1,6 @@
+# Папка с секретами
 secrets/
+
+# Файлы сессии Telethon
+*.session
+*.session-journal
