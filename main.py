@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 from dotenv import load_dotenv
 from telethon.errors import FloodWaitError
+import random
 
 load_dotenv()
 
@@ -30,6 +31,14 @@ CAR_NUMBERS = [
 POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", 10))
 
 
+def col_number_to_letter(n):
+    string = ""
+    while n > 0:
+        n, remainder = divmod(n - 1, 26)
+        string = chr(65 + remainder) + string
+    return string
+
+
 async def poll_once():
     print("Запускается опрос...")
     client = TelegramClient('session', API_ID, API_HASH)
@@ -49,7 +58,6 @@ async def poll_once():
     creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
     gclient = gspread.authorize(creds)
     sheet = gclient.open_by_key(SPREADSHEET_ID).worksheet("Лист1")
-
 
     statuses = []
 
@@ -93,13 +101,22 @@ async def poll_once():
     for number in CAR_NUMBERS:
         status = await get_response(number)
         statuses.append(status)
-        await asyncio.sleep(30)  # пауза между запросами, чтобы не спамить
+        wait_time = random.randint(6, 10)
+        print(f"Ждем {wait_time} секунд перед следующим запросом...")
+        await asyncio.sleep(wait_time)
 
     await client.disconnect()
 
     current_time_str = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     new_col = [current_time_str] + statuses
-    sheet.insert_cols([new_col], 2)
+
+    # Определяем номер следующего столбца
+    col_number = sheet.col_count + 1
+    cell_range = f"{col_number_to_letter(col_number)}1:{col_number_to_letter(col_number)}{len(new_col)}"
+
+    # Записываем данные в новый столбец
+    sheet.update(cell_range, [[item] for item in new_col])
+
     print(f"Опрос завершён в {current_time_str}")
 
 
