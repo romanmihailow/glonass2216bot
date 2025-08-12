@@ -5,6 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 from dotenv import load_dotenv
+from telethon.errors import FloodWaitError
 
 load_dotenv()
 
@@ -32,7 +33,12 @@ POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", 10))
 async def poll_once():
     print("Запускается опрос...")
     client = TelegramClient('session', API_ID, API_HASH)
-    await client.start(phone=PHONE_NUMBER)
+    try:
+        await client.start(phone=PHONE_NUMBER)
+    except FloodWaitError as e:
+        print(f"Ждем {e.seconds} секунд из-за ограничения Telegram...")
+        await asyncio.sleep(e.seconds)
+        await client.start(phone=PHONE_NUMBER)
 
     scope = [
         "https://spreadsheets.google.com/feeds",
@@ -42,11 +48,13 @@ async def poll_once():
     ]
     creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
     gclient = gspread.authorize(creds)
-    sheet = gclient.open_by_key(SPREADSHEET_ID).sheet1
+    sheet = gclient.open_by_key(SPREADSHEET_ID).worksheet("Лист1")
+
 
     statuses = []
 
     async def get_response(number):
+        nonlocal client
         response_text = None
 
         @client.on(events.NewMessage(from_users=BOT_USERNAME))
@@ -66,6 +74,11 @@ async def poll_once():
         if not response_text:
             return "Нет ответа"
 
+        if "Слишком много запросов" in response_text:
+            print(f"{number} — Слишком много запросов. Ждем 15 секунд...")
+            await asyncio.sleep(15)
+            return await get_response(number)  # повторяем запрос
+
         try:
             date_str = response_text.split("от")[-1].strip()
             last_seen = datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
@@ -77,10 +90,10 @@ async def poll_once():
         except Exception:
             return "Ошибка формата"
 
-    tasks = [get_response(number) for number in CAR_NUMBERS]
-    results = await asyncio.gather(*tasks)
-
-    statuses.extend(results)
+    for number in CAR_NUMBERS:
+        status = await get_response(number)
+        statuses.append(status)
+        await asyncio.sleep(30)  # пауза между запросами, чтобы не спамить
 
     await client.disconnect()
 
