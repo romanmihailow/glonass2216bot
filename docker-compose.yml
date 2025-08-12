@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  glonass2216bot:
+    build: .
+    container_name: glonass2216bot
+    volumes:
+      - .:/app
+      - ./secrets:/app/secrets:ro
+    env_file:
+      - .env
+    restart: unless-stopped

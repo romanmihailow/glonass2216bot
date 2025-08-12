@@ -1,6 +1,6 @@
-# Папка с секретами
+venv/
+__pycache__/
+*.pyc
+.env
 secrets/
-
-# Файлы сессии Telethon
-*.session
-*.session-journal
+session.session
