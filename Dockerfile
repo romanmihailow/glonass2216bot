@@ -1,10 +1,15 @@
-FROM python:3.10-slim
+# Используем официальный образ Python
+FROM python:3.12-slim
 
+# Установим рабочую директорию внутри контейнера
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Копируем файлы проекта
+COPY . /app/
 
-COPY . .
+# Устанавливаем зависимости
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
+# Точка входа
 CMD ["python", "main.py"]

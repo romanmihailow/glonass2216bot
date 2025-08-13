@@ -1,12 +1,13 @@
 version: '3.8'
 
 services:
-  glonass2216bot:
+  bot:
     build: .
     container_name: glonass2216bot
     volumes:
-      - .:/app
-      - ./secrets:/app/secrets:ro
+      - ./secrets:/app/secrets  # монтируем папку с секретами
     env_file:
-      - .env
-    restart: unless-stopped
+      - .env  # подгружаем все переменные из .env автоматически
+    ports:
+      - "5000:5000"  # открываем порты, если нужно
+    restart: unless-stopped  # автоматический перезапуск контейнера
