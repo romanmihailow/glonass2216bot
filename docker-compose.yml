@@ -6,8 +6,7 @@ services:
     container_name: glonass2216bot
     volumes:
       - ./secrets:/app/secrets  # монтируем папку с секретами
+      - ./sessions:/app/sessions  # монтируем папку сессий
     env_file:
-      - .env  # подгружаем все переменные из .env автоматически
-    ports:
-      - "5000:5000"  # открываем порты, если нужно
-    restart: unless-stopped  # автоматический перезапуск контейнера
+      - .env  # подгружаем переменные окружения
+    restart: unless-stopped

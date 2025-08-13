@@ -60,11 +60,7 @@ def insert_column_shift_right(spreadsheet, insert_index=1):
         }]
     }
 
-    print(f"sheet_id: {sheet_id}")
-    print(f"Request body: {body}")
-
     spreadsheet.batch_update(body)
-    print("Столбец успешно вставлен")
 
 
 async def poll_once():
@@ -133,7 +129,7 @@ async def poll_once():
     for i, number in enumerate(CAR_NUMBERS, start=1):
         response_text = await get_response(number)
         wait_time = random.randint(6, 10)
-        print(f"Ждем {wait_time} секунд перед следующим запросом... {i}/{total_requests} Текущий запрос: {number} Ответ: {response_text}")
+        print(f"{i}/{total_requests} — {number}: {response_text}. Ждем {wait_time} секунд...")
         statuses.append(response_text)
         await asyncio.sleep(wait_time)
 
