@@ -70,7 +70,7 @@ def insert_column_shift_right(spreadsheet, insert_index=1):
 async def poll_once():
     print("Запускается опрос...")
 
-    client = TelegramClient('session', API_ID, API_HASH)
+    client = TelegramClient('sessions/session', API_ID, API_HASH)
     try:
         await client.start(phone=PHONE_NUMBER)
     except FloodWaitError as e:
