@@ -140,7 +140,7 @@ async def poll_once():
                 msktime = msktime.replace(tzinfo=timezone(timedelta(hours=3)))
                 now_utc = datetime.now(timezone.utc)
                 delta = now_utc - msktime.astimezone(timezone.utc)
-                status_icon = " 🟢 На  связи   " if delta.total_seconds() <= 3600 else " 🔴 Нет связи    "
+                status_icon = "  🟢 На  связи    " if delta.total_seconds() <= 3600 else "  🔴 Нет связи     "
             except Exception:
                 status_icon = "🔴"
             return f"{status_icon} {first_line}"
