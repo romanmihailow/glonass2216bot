@@ -1,6 +1,7 @@
 import asyncio
 from telethon import TelegramClient, events
 from datetime import datetime
+from datetime import timedelta
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
@@ -139,7 +140,20 @@ async def poll_once():
 
     await client.disconnect()
 
-    current_time_str = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    #current_time_str = datetime.now().strftime("%d-%m-%Y %H:%M:%S")_______________utc no use
+    
+    # Получаем текущее время
+    current_time = datetime.now()
+    
+    # Добавляем 3 часа (для московского времени)
+    current_time_moscow = current_time + timedelta(hours=3)
+    
+    # Преобразуем время в строку
+    #current_time_str = current_time_moscow.strftime("%d-%m-%Y %H:%M:%S")____origin
+    current_time_str = current_time_moscow.strftime("%d.%m.%Y %H:%M")
+    
+
+    
 
     # Вставляем пустой столбец на место B
     insert_column_shift_right(spreadsheet, insert_index=1)
