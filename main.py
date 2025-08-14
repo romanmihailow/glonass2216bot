@@ -120,15 +120,29 @@ async def poll_once():
                 break
 
         if not response_text:
-            return f"Нет ответа от бота на номер {number}"
+            return f"🔴 Нет ответа от бота на номер {number}"
 
         if "Слишком много запросов" in response_text:
             log.warning(f"{number} — Слишком много запросов. Ждем 15 секунд...")
             await asyncio.sleep(15)
             return await get_response(number)
 
-        # Возвращаем полный ответ бота
-        return response_text
+        # Попробуем найти дату последней связи и определить актуальность
+        marker = "Последняя связь:"
+        if marker in response_text:
+            try:
+                # пример строки: "Последняя связь: 14-08-2025 14:00:01"
+                after_marker = response_text.split(marker)[1].splitlines()[0].strip()
+                last_seen = datetime.strptime(after_marker, "%d-%m-%Y %H:%M:%S")
+                delta = datetime.now() - last_seen
+                if delta.total_seconds() <= 3600:
+                    return f"🟢 На связи {response_text}"
+                else:
+                    return f"🔴 Нет связи {response_text}"
+            except Exception:
+                return f"🔴 {response_text}"
+        else:
+            return f"🔴 {response_text}"
 
     total_requests = len(CAR_NUMBERS)
 
