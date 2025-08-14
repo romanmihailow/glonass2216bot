@@ -2,13 +2,14 @@ import asyncio
 import logging
 import sys
 from telethon import TelegramClient, events
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 from dotenv import load_dotenv
 from telethon.errors import FloodWaitError
 import random
+import re
 
 # === Настройка логирования ===
 logging.basicConfig(
@@ -120,29 +121,31 @@ async def poll_once():
                 break
 
         if not response_text:
-            return f"🔴 Нет ответа от бота на номер {number}"
+            return f"🔴 ГРЗ: {number} Нет ответа от бота"
 
         if "Слишком много запросов" in response_text:
             log.warning(f"{number} — Слишком много запросов. Ждем 15 секунд...")
             await asyncio.sleep(15)
             return await get_response(number)
 
-        # Попробуем найти дату последней связи и определить актуальность
-        marker = "Последняя связь:"
-        if marker in response_text:
+        # Только первая строка ответа бота (например "ГРЗ: ... координаты от ...")
+        first_line = response_text.split('\n')[0]
+        # Попробуем найти дату "от dd-mm-YYYY HH:MM:SS"
+        match = re.search(r'от (\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2})', first_line)
+        if match:
+            dt_str = match.group(1)
             try:
-                # пример строки: "Последняя связь: 14-08-2025 14:00:01"
-                after_marker = response_text.split(marker)[1].splitlines()[0].strip()
-                last_seen = datetime.strptime(after_marker, "%d-%m-%Y %H:%M:%S")
-                delta = datetime.now() - last_seen
-                if delta.total_seconds() <= 3600:
-                    return f"🟢 На связи {response_text}"
-                else:
-                    return f"🔴 Нет связи {response_text}"
+                # Время бота: Московское (UTC+3)
+                msktime = datetime.strptime(dt_str, "%d-%m-%Y %H:%M:%S")
+                msktime = msktime.replace(tzinfo=timezone(timedelta(hours=3)))
+                now_utc = datetime.now(timezone.utc)
+                delta = now_utc - msktime.astimezone(timezone.utc)
+                status_icon = " 🟢 На связи " if delta.total_seconds() <= 3600 else " 🔴 Нет связи "
             except Exception:
-                return f"🔴 {response_text}"
+                status_icon = "🔴"
+            return f"{status_icon} {first_line}"
         else:
-            return f"🔴 {response_text}"
+            return f"🔴 {first_line}"
 
     total_requests = len(CAR_NUMBERS)
 
@@ -155,18 +158,17 @@ async def poll_once():
 
     await client.disconnect()
 
-    current_time_moscow = datetime.now() + timedelta(hours=3)
-    current_time_str = current_time_moscow.strftime("%d.%m.%Y %H:%M")
+    current_time_moscow = (datetime.now(timezone.utc) + timedelta(hours=3)).strftime("%d.%m.%Y %H:%M")
 
     insert_column_shift_right(spreadsheet, insert_index=1)
 
     sheet = spreadsheet.get_worksheet(0)
-    new_col = [current_time_str] + statuses
+    new_col = [current_time_moscow] + statuses
     col_letter = col_number_to_letter(2)  # B
     cell_range = f"{col_letter}1:{col_letter}{len(new_col)}"
     sheet.update(cell_range, [[item] for item in new_col])
 
-    log.info(f"Опрос завершён в {current_time_str}")
+    log.info(f"Опрос завершён в {current_time_moscow}")
 
 
 async def main():
