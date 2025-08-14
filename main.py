@@ -1,13 +1,22 @@
 import asyncio
+import logging
+import sys
 from telethon import TelegramClient, events
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 from dotenv import load_dotenv
 from telethon.errors import FloodWaitError
 import random
+
+# === Настройка логирования ===
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+log = logging.getLogger(__name__)
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -61,21 +70,21 @@ def insert_column_shift_right(spreadsheet, insert_index=1):
         }]
     }
 
-    print(f"sheet_id: {sheet_id}")
-    print(f"Request body: {body}")
+    log.info(f"sheet_id: {sheet_id}")
+    log.debug(f"Request body: {body}")
 
     spreadsheet.batch_update(body)
-    print("Столбец успешно вставлен")
+    log.info("Столбец успешно вставлен")
 
 
 async def poll_once():
-    print("Запускается опрос...")
+    log.info("Запускается опрос...")
 
     client = TelegramClient('sessions/session', API_ID, API_HASH)
     try:
         await client.start(phone=PHONE_NUMBER)
     except FloodWaitError as e:
-        print(f"Ждем {e.seconds} секунд из-за ограничения Telegram...")
+        log.warning(f"Ждем {e.seconds} секунд из-за ограничения Telegram...")
         await asyncio.sleep(e.seconds)
         await client.start(phone=PHONE_NUMBER)
 
@@ -114,7 +123,7 @@ async def poll_once():
             return "Нет ответа"
 
         if "Слишком много запросов" in response_text:
-            print(f"{number} — Слишком много запросов. Ждем 15 секунд...")
+            log.warning(f"{number} — Слишком много запросов. Ждем 15 секунд...")
             await asyncio.sleep(15)
             return await get_response(number)
 
@@ -127,6 +136,7 @@ async def poll_once():
             else:
                 return "🔴 Нет связи"
         except Exception:
+            log.error(f"{number} — ошибка формата ответа: {response_text}")
             return "Ошибка формата"
 
     total_requests = len(CAR_NUMBERS)
@@ -134,46 +144,30 @@ async def poll_once():
     for i, number in enumerate(CAR_NUMBERS, start=1):
         response_text = await get_response(number)
         wait_time = random.randint(6, 10)
-        print(f"Ждем {wait_time} секунд перед следующим запросом... {i}/{total_requests} Текущий запрос: {number} Ответ: {response_text}")
+        log.info(f"{i}/{total_requests} Текущий запрос: {number} Ответ: {response_text}. Ждем {wait_time} секунд перед следующим запросом...")
         statuses.append(response_text)
         await asyncio.sleep(wait_time)
 
     await client.disconnect()
 
-    #current_time_str = datetime.now().strftime("%d-%m-%Y %H:%M:%S")_______________utc no use
-    
-    # Получаем текущее время
-    current_time = datetime.now()
-    
-    # Добавляем 3 часа (для московского времени)
-    current_time_moscow = current_time + timedelta(hours=3)
-    
-    # Преобразуем время в строку
-    #current_time_str = current_time_moscow.strftime("%d-%m-%Y %H:%M:%S")____origin
+    current_time_moscow = datetime.now() + timedelta(hours=3)
     current_time_str = current_time_moscow.strftime("%d.%m.%Y %H:%M")
-    
 
-    
-
-    # Вставляем пустой столбец на место B
     insert_column_shift_right(spreadsheet, insert_index=1)
 
-    # Обновляем лист после вставки
     sheet = spreadsheet.get_worksheet(0)
-
-    # Заполняем B1 датой, а ниже — статусами
     new_col = [current_time_str] + statuses
     col_letter = col_number_to_letter(2)  # B
     cell_range = f"{col_letter}1:{col_letter}{len(new_col)}"
     sheet.update(cell_range, [[item] for item in new_col])
 
-    print(f"Опрос завершён в {current_time_str}")
+    log.info(f"Опрос завершён в {current_time_str}")
 
 
 async def main():
     while True:
         await poll_once()
-        print(f"Ожидаем {POLL_INTERVAL_MINUTES} минут до следующего опроса...")
+        log.info(f"Ожидаем {POLL_INTERVAL_MINUTES} минут до следующего опроса...")
         await asyncio.sleep(POLL_INTERVAL_MINUTES * 60)
 
 
