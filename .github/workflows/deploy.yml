@@ -45,3 +45,11 @@ jobs:
 
             echo "✅ Deploy complete!"
           EOF
+
+      # Просмотр последних логов контейнера
+      - name: Show container logs
+        run: |
+          ssh -o StrictHostKeyChecking=no root@193.168.48.226 << 'EOF'
+            echo "📄 Last logs from container:"
+            docker logs --tail 50 glonass2216bot
+          EOF
