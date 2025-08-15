@@ -31,7 +31,7 @@ jobs:
       # Деплой на удалённый сервер
       - name: Deploy to remote server
         run: |
-          ssh -o StrictHostKeyChecking=no root@YOUR_SERVER_IP << 'EOF'
+          ssh -o StrictHostKeyChecking=no root@193.168.48.226 << 'EOF'
             cd ~/glonass2216bot
 
             echo "🛑 Stopping existing container..."
