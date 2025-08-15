@@ -17,11 +17,11 @@ jobs:
 
       # Настройка SSH для доступа к серверу
       - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.8.3
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Проверка длины ключа (для отладки)
+      # Проверка длины ключа (опционально, для отладки)
       - name: Check SSH_PRIVATE_KEY
         run: |
           echo "Secret length: ${#SSH_PRIVATE_KEY}"
