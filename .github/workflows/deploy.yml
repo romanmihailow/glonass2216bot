@@ -1,0 +1,40 @@
+name: Deploy to Remote Server
+
+# Триггер на пуш в конкретную ветку
+on:
+  push:
+    branches:
+      - task_github_deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Клонируем репозиторий
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Настройка SSH для доступа к серверу
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    # Деплой на удалённый сервер
+    - name: Deploy to remote server
+      run: |
+        ssh -o StrictHostKeyChecking=no root@YOUR_SERVER_IP << 'EOF'
+          cd ~/glonass2216bot
+          
+          echo "🛑 Stopping existing container..."
+          docker-compose down
+          
+          echo "🛠 Building new image..."
+          docker-compose build --no-cache
+          
+          echo "🚀 Starting new container..."
+          docker-compose up -d
+          
+          echo "✅ Deploy complete!"
+        EOF
