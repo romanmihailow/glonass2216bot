@@ -1,10 +1,13 @@
-name: Deploy to Remote Server
+name: Деплой на удалённый сервер
 
-# Триггер на пуш в ветку task_github_deploy
+# Триггер на пуш и PR в ветку develop
 on:
   push:
     branches:
-      - task_github_deploy
+      - develop
+  pull_request:
+    branches:
+      - develop
 
 jobs:
   deploy:
@@ -12,44 +15,44 @@ jobs:
 
     steps:
       # Клонируем репозиторий
-      - name: Checkout repository
+      - name: Клонирование репозитория
         uses: actions/checkout@v3
 
       # Настройка SSH для доступа к серверу
-      - name: Set up SSH key
+      - name: Настройка SSH ключа
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Проверка длины ключа (опционально, для отладки)
-      - name: Check SSH_PRIVATE_KEY
+      # Проверка длины ключа (для отладки)
+      - name: Проверка SSH_PRIVATE_KEY
         run: |
-          echo "Secret length: ${#SSH_PRIVATE_KEY}"
+          echo "Длина секретного ключа: ${#SSH_PRIVATE_KEY}"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
       # Деплой на удалённый сервер
-      - name: Deploy to remote server
+      - name: Деплой на сервер
         run: |
           ssh -o StrictHostKeyChecking=no root@193.168.48.226 << 'EOF'
             cd ~/glonass2216bot
 
-            echo "🛑 Stopping existing container..."
+            echo "🛑 Остановка существующего контейнера..."
             docker-compose down
 
-            echo "🛠 Building new image..."
+            echo "🛠 Сборка нового образа..."
             docker-compose build --no-cache
 
-            echo "🚀 Starting new container..."
+            echo "🚀 Запуск нового контейнера..."
             docker-compose up -d
 
-            echo "✅ Deploy complete!"
+            echo "✅ Деплой завершён!"
           EOF
 
       # Просмотр последних логов контейнера
-      - name: Show container logs
+      - name: Просмотр последних логов
         run: |
           ssh -o StrictHostKeyChecking=no root@193.168.48.226 << 'EOF'
-            echo "📄 Last logs from container:"
+            echo "📄 Последние логи контейнера:"
             docker logs --tail 50 glonass2216bot
           EOF
