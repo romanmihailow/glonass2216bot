@@ -5,3 +5,8 @@ __pycache__/
 secrets/
 session.session
 sessions/
+
+# Ignore SSH keys
+github_ci_key
+github_ci_key.pub
+g
