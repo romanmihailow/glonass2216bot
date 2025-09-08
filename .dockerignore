@@ -1,0 +1,28 @@
+.gitignore
+# Секреты
+.env
+secrets/
+session/
+
+# Виртуальное окружение
+venv/
+.envrc
+
+# Python-мусор
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE и системное
+.idea/
+.vscode/
+.DS_Store
+
+# Логи и данные
+*.log
+*.csv
+*.sqlite
+# Ignore SSH keys
+github_ci_key
+github_ci_key.pub
